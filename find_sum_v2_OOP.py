@@ -15,7 +15,7 @@ class ExcelReader(tk.Tk):
         self.create_widgets()
 
     def initUI(self):
-        self.title('Excel_Sum_Finder v0.1')
+        self.title('Excel_Sum_Finder v0.2')
         # self.geometry('300x450') 
 
     def erase_error_alert(self):
