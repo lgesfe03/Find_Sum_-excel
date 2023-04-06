@@ -3,6 +3,7 @@
 import tkinter as tk
 from tkinter import filedialog,messagebox
 import pandas as pd
+import numpy as np
 
 
 # class ExcelReader(tk.Frame):
@@ -81,7 +82,7 @@ class ExcelReader(tk.Tk):
             #Alert user to choose File first
             print("FileNotFoundError: no file been choose")
             
-        
+    #find equal to target sum 
     def subset_sum_indices(self,arr, target_sum):
         n = len(arr)
         dp = [[None for j in range(target_sum+1)] for i in range(n+1)]
@@ -101,6 +102,25 @@ class ExcelReader(tk.Tk):
                 else:
                     dp[i][j] = dp[i-1][j]
         return dp[n][target_sum]
+    #find not equal but most close to target sum   
+    def find_closest_sum(self,arr, target_sum):
+        # Sort the array in ascending order
+        arr = np.sort(arr)
+        # Initialize the closest_sum to a large positive number
+        closest_sum = float('inf')
+        # Iterate through all possible subsets of the array
+        for i in range(2**len(arr)):
+            subset = [arr[j] for j in range(len(arr)) if (i & (1 << j))]
+            # Compute the sum of the current subset
+            subset_sum = sum(subset)
+            # If the subset sum is closer to the target sum than the current closest sum, update the closest sum
+            if abs(subset_sum - target_sum) < abs(closest_sum - target_sum):
+                closest_sum = subset_sum
+            # If we find a subset that sums up to the target sum, we can stop searching and return that subset
+            if closest_sum == target_sum:
+                return subset
+        # If no subset sums up to the target sum, return the closest sum
+        return closest_sum
 
     def read_column(self):
         try:
@@ -126,10 +146,20 @@ class ExcelReader(tk.Tk):
             print("self.taget_sum=",self.taget_sum)
             # print("type(self.taget_sum)=",type(self.taget_sum))
             
-            result = self.subset_sum_indices(self.column_data, self.taget_sum)
+            #find equal to target sum 
+            # result = self.subset_sum_indices(self.column_data, self.taget_sum)
+            #find not equal but most close to target sum   
+            result = self.find_closest_sum(self.column_data, self.taget_sum)
+
             if result is not None:
-                end_text = "Target:"+ str(self.taget_sum) + "\r\nExcel Found: " + str([int(self.column_data[i]) for i in result])          
-                messagebox.showinfo('Result', end_text)
+                if (isinstance(result,np.float64)):
+                    #if true mean only one number
+                    messagebox.showinfo("Result Close=",int(result))
+                elif(isinstance(result,list)):
+                    #if true means contain list number
+                    messagebox.showinfo("Result List=", [int(i) for i in result])
+                # end_text = "Target:"+ str(self.taget_sum) + "\r\nExcel Found: " + str([int(self.column_data[i]) for i in result])          
+                # messagebox.showinfo('Result', end_text)
             else:
                 end_text = "Excel NOT found"
                 messagebox.showinfo('Result', end_text)
