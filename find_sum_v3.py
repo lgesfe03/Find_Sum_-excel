@@ -16,7 +16,7 @@ class ExcelReader(tk.Tk):
         self.create_widgets()
 
     def initUI(self):
-        self.title('Excel_Sum_Finder v0.2')
+        self.title('Excel_Sum_Finder v0.3')
         # self.geometry('300x450') 
 
     def erase_error_alert(self):
@@ -41,7 +41,42 @@ class ExcelReader(tk.Tk):
         self.choose_file_button.pack(padx=20, pady=10)
         self.first_choose = False
         
+    def UI_button(self):
+        # Get a list of column names from the DataFrame
+        self.column_dropdown_text = tk.Label(self, text="2.choose column below")
+        self.column_dropdown_text.pack(padx=20, pady=10)
+        # Create a dropdown menu to select a column
+        self.column_var = tk.StringVar()
+        self.column_menu = tk.OptionMenu(self, self.column_var, "")
+        self.column_menu.pack(padx=20, pady=10)
+        #add Label
+        self.column_label = tk.Label(self, text="3.Type sum want to find")
+        self.column_label.pack(padx=20, pady=10)
+        #add etnry space
+        self.taget_sum_entry = tk.Entry(self)
+        self.taget_sum_entry.pack(padx=20, pady=10)
+        
+        #add Label
+        self.option_label = tk.Label(self, text="4.Choose Equal / Close search below")
+        self.option_label.pack(padx=20, pady=10)
+        # Create a StringVar to hold the selected option
+        self.selected_option = tk.StringVar()
+        # Set the default option
+        self.selected_option.set("Equal  ")
+        # Create the radio buttons
+        self.radio_button_0 = tk.Radiobutton(self, text="Equal  ", variable=self.selected_option, value="Equal  " )
+        self.radio_button_1 = tk.Radiobutton(self, text="Closest", variable=self.selected_option, value="Closest" )
+        # Pack the radio buttons
+        self.radio_button_0.pack()
+        self.radio_button_1.pack()
 
+        #add Label
+        self.press_label = tk.Label(self, text="5.Press Readcolumn button below")
+        self.press_label.pack(padx=20, pady=10)
+        #add buttons
+        self.read_button = tk.Button(self, text="Readcolumn", command=self.read_column)
+        self.read_button.pack(padx=20, pady=10)
+        self.first_choose = True
     def choose_file(self):
         try:
             self.erase_error_alert()
@@ -49,26 +84,7 @@ class ExcelReader(tk.Tk):
             if self.filename == "":
                 return 1
             if self.first_choose == False:
-                # Get a list of column names from the DataFrame
-                self.column_dropdown_text = tk.Label(self, text="2.choose column below")
-                self.column_dropdown_text.pack(padx=20, pady=10)
-                # Create a dropdown menu to select a column
-                self.column_var = tk.StringVar()
-                self.column_menu = tk.OptionMenu(self, self.column_var, "")
-                self.column_menu.pack(padx=20, pady=10)
-                #add Label
-                self.column_label = tk.Label(self, text="3.Type sum want to find")
-                self.column_label.pack(padx=20, pady=10)
-                #add etnry space
-                self.taget_sum_entry = tk.Entry(self)
-                self.taget_sum_entry.pack(padx=20, pady=10)
-                #add Label
-                self.press_label = tk.Label(self, text="4.Press Readcolumn button below")
-                self.press_label.pack(padx=20, pady=10)
-                #add buttons
-                self.read_button = tk.Button(self, text="Readcolumn", command=self.read_column)
-                self.read_button.pack(padx=20, pady=10)
-                self.first_choose = True
+                self.UI_button()
             self.file_label.config(text="1.Chosen file: " + self.filename)
             self.data = pd.read_excel(self.filename)
             
@@ -104,6 +120,7 @@ class ExcelReader(tk.Tk):
         return dp[n][target_sum]
     #find not equal but most close to target sum   
     def find_closest_sum(self,arr, target_sum):
+        self.closest_equal = False
         # Sort the array in ascending order
         arr = np.sort(arr)
         # Initialize the closest_sum to a large positive number
@@ -116,15 +133,74 @@ class ExcelReader(tk.Tk):
             # If the subset sum is closer to the target sum than the current closest sum, update the closest sum
             if abs(subset_sum - target_sum) < abs(closest_sum - target_sum):
                 closest_sum = subset_sum
+                self.closest_sum = closest_sum
+                self.closest_subset = subset
             # If we find a subset that sums up to the target sum, we can stop searching and return that subset
             if closest_sum == target_sum:
+                self.closest_equal = True
                 return subset
         # If no subset sums up to the target sum, return the closest sum
         return closest_sum
-
+    
+    def show_result_equal(self):
+        result_s_title      = "Result_"
+        result_s_equal      = "Equal = "
+        result_s_target_sum = "Target = " + str(self.taget_sum) 
+        result_s_cloest     = "Cloest = "
+        result_s_compose    = "Values = "
+        if self.result is not None:
+            result_s_equal += "Yes"
+            if (isinstance(self.result,np.float64)):
+                #if true mean only one number
+                result_s_title += "  "
+                result_s_compose += int(self.result)
+            elif(isinstance(self.result,list)):
+                #if true means contain list number
+                result_s_title += "L "
+                result_s_compose += str([int(self.column_data[i]) for i in self.result]) 
+            messagebox.showinfo(result_s_title, result_s_equal +"\r\n" + result_s_compose)
+        else:
+            result_s_title += "  "
+            result_s_equal += "No"
+            end_text = "Excel NOT found"
+            messagebox.showinfo(result_s_title, result_s_equal +"\r\n" +end_text)
+        
+    def show_result_close(self):
+        if self.result is not None:
+                result_s_title      = "Result_"
+                result_s_equal      = "Equal = "
+                result_s_target_sum = "Target = " + str(self.taget_sum) 
+                result_s_cloest     = "Cloest = "
+                result_s_compose    = "Values = "
+                if (isinstance(self.result,np.float64)):
+                    #if true mean only one number
+                    result_s_title += "  "
+                    if(self.closest_equal):
+                        result_s_equal += "Yes"
+                    else:
+                        result_s_equal += "No"
+                        result_s_cloest += str(int(self.closest_sum))
+                    result_s_compose += str([int(i) for i in self.closest_subset]) 
+                elif(isinstance(self.result,list)):
+                    #if true mean only one number
+                    result_s_title += "L "
+                    if(self.closest_equal):
+                        result_s_equal += "Yes"
+                    else:
+                        result_s_equal += "No"
+                        result_s_cloest += str(int(self.closest_sum))
+                    result_s_compose += str([int(i) for i in self.result])
+                if(self.closest_equal):
+                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n"  +result_s_compose+ "\r\n" )      
+                else:
+                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n" +result_s_cloest+ "\r\n" +result_s_compose+ "\r\n" )      
+        else:
+            end_text = "Excel NOT found"
+            messagebox.showinfo('Result', end_text)
     def read_column(self):
         try:
             self.erase_error_alert()
+            self.selected_option.get()
             self.selected_column = self.column_var.get()
             self.column_data = self.data[self.selected_column]
             # print("self.column_data=\r\n",self.column_data)
@@ -146,23 +222,14 @@ class ExcelReader(tk.Tk):
             print("self.taget_sum=",self.taget_sum)
             # print("type(self.taget_sum)=",type(self.taget_sum))
             
-            #find equal to target sum 
-            # result = self.subset_sum_indices(self.column_data, self.taget_sum)
-            #find not equal but most close to target sum   
-            result = self.find_closest_sum(self.column_data, self.taget_sum)
-
-            if result is not None:
-                if (isinstance(result,np.float64)):
-                    #if true mean only one number
-                    messagebox.showinfo("Result Close=",int(result))
-                elif(isinstance(result,list)):
-                    #if true means contain list number
-                    messagebox.showinfo("Result List=", [int(i) for i in result])
-                # end_text = "Target:"+ str(self.taget_sum) + "\r\nExcel Found: " + str([int(self.column_data[i]) for i in result])          
-                # messagebox.showinfo('Result', end_text)
-            else:
-                end_text = "Excel NOT found"
-                messagebox.showinfo('Result', end_text)
+            if(self.selected_option.get() == "Equal  "):
+                #find equal to target sum 
+                self.result = self.subset_sum_indices(self.column_data, self.taget_sum)
+                self.show_result_equal()
+            elif(self.selected_option.get() == "Closest"):
+                #find not equal but most close to target sum   
+                self.result = self.find_closest_sum(self.column_data, self.taget_sum)
+                self.show_result_close()
 
         except FileNotFoundError:
             #Alert user to choose certain file
@@ -179,7 +246,10 @@ class ExcelReader(tk.Tk):
             #Alert user to choose column first
             self.column_label.config(bg = 'red')
             self.taget_sum_entry.config(bg = 'red')
-            end_text = "3.Type sum want to find first"
+            if self.taget_sum =='':
+                end_text = "3.Type sum want to find first"
+            else:
+                end_text = "3.Type sum can ONLY type integer"
             messagebox.showwarning('Warning', end_text)
         
 
