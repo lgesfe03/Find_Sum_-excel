@@ -2,6 +2,7 @@
 
 import tkinter as tk
 from tkinter import filedialog,messagebox
+from tkinter import ttk
 import pandas as pd
 import numpy as np
 
@@ -77,6 +78,9 @@ class ExcelReader(tk.Tk):
         self.read_button = tk.Button(self, text="Readcolumn", command=self.read_column)
         self.read_button.pack(padx=20, pady=10)
         self.first_choose = True
+        #add Processbar
+        self.progressbar = ttk.Progressbar(self, orient="horizontal", length=300, mode="determinate")
+        self.progressbar.pack(pady=10)
     def choose_file(self):
         try:
             self.erase_error_alert()
@@ -98,13 +102,17 @@ class ExcelReader(tk.Tk):
             #Alert user to choose File first
             print("FileNotFoundError: no file been choose")
             
-    #find equal to target sum 
+    #Algorithm1 : find equal to target sum 
     def subset_sum_indices(self,arr, target_sum):
         n = len(arr)
         dp = [[None for j in range(target_sum+1)] for i in range(n+1)]
         for i in range(n+1):
             dp[i][0] = []
         for i in range(1, n+1):
+            self.progressbar['value'] = int(i*100/(n+1))
+            self.update_idletasks()
+            complete = int(i*100/n+1)
+            # print(int(i*100/(n+1)))
             for j in range(1, target_sum+1):
                 if arr[i-1] <= j:
                     prev_subset = dp[i-1][j]
@@ -118,7 +126,7 @@ class ExcelReader(tk.Tk):
                 else:
                     dp[i][j] = dp[i-1][j]
         return dp[n][target_sum]
-    #find not equal but most close to target sum   
+    #Algorithm2 : find not equal but most close to target sum   
     def find_closest_sum(self,arr, target_sum):
         self.closest_equal = False
         # Sort the array in ascending order
@@ -141,7 +149,7 @@ class ExcelReader(tk.Tk):
                 return subset
         # If no subset sums up to the target sum, return the closest sum
         return closest_sum
-    
+    #Print out result for Algorithm1
     def show_result_equal(self):
         result_s_title      = "Result_"
         result_s_equal      = "Equal = "
@@ -164,7 +172,7 @@ class ExcelReader(tk.Tk):
             result_s_equal += "No"
             end_text = "Excel NOT found"
             messagebox.showinfo(result_s_title, result_s_equal +"\r\n" +end_text)
-        
+    #Print out result for Algorithm2
     def show_result_close(self):
         if self.result is not None:
                 result_s_title      = "Result_"
