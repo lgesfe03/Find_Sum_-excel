@@ -5,7 +5,7 @@ Date: 2023/04
 
 # Introduction
 This repository is used to search certain sum number from excel file.
-
+[User Manual](blob/main/Readme/Readme.pdf)
 # Package method
 Due to "pyinstaller" might pack too large size executable file, we create a virtual environment for packaging it.
 Follow steps below:
