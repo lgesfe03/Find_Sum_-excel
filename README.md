@@ -3,6 +3,7 @@ Author : Mark Lin YL
 
 Date: 2023/04
 
+Executable File Download:  [Link](https://reurl.cc/8qL5ao) (Recommand to compile yourself for lastest version )
 # Introduction
 This repository is used to search certain sum number from excel file.
 
