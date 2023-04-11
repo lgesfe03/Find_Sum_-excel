@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import math
 import time
+import threading
 
 version = 'Excel_Sum_Finder v0.4'
 pub_date = '2023/04/11'
@@ -87,7 +88,8 @@ class ExcelReader(tk.Tk):
         self.press_label = tk.Label(self, text="5.Press Readcolumn button below")
         self.press_label.pack(padx=20, pady=10)
         #add buttons
-        self.read_button = tk.Button(self, text="Readcolumn", command=self.read_column)
+        self.is_searching = False
+        self.read_button = tk.Button(self, text="Readcolumn", command=self.searching_thread)
         self.read_button.pack(padx=20, pady=10)
         self.first_choose = True
         #add Processbar
@@ -153,13 +155,13 @@ class ExcelReader(tk.Tk):
                     closest_sum = j
         closest_sum = int(closest_sum)
         if closest_sum == target_sum:
-            print("The target sum can be obtained exactly.")
+            # print("The target sum can be obtained exactly.")
             self.closest_equal = True 
         else:
-            print(f"The closest sum to the target is {closest_sum}.")
+            # print(f"The closest sum to the target is {closest_sum}.")
             self.closest_sum = closest_sum
         #sum components in array
-        print("The components of the closest sum are:")
+        # print("The components of the closest sum are:")
 
         i = n
         j = closest_sum
@@ -256,13 +258,13 @@ class ExcelReader(tk.Tk):
             self.selected_option.get()
             self.selected_column = self.column_var.get()
             self.column_data = self.data[self.selected_column]
-            print("self.column_data = ",self.column_data)
+            # print("self.column_data = ",self.column_data)
             length = len(self.column_data)
             #input: target sum
             self.taget_sum = self.taget_sum_entry.get()
             self.taget_sum = int(self.taget_sum)
             print("self.taget_sum=",self.taget_sum)
-            
+            self.is_searching = True
             #from Select Option List, choose different algorithm
             if(self.selected_option.get() == "Equal"):
                 #find equal to target sum 
@@ -274,7 +276,7 @@ class ExcelReader(tk.Tk):
                 self.result = self.find_closest_sum(self.column_data, self.taget_sum)
                 self.timediff = self.timercount_stop()
                 self.show_result_close()
-
+            self.is_searching = False
         except FileNotFoundError:
             #Alert user to choose certain file
             end_text = "1.Choose File First"
@@ -295,8 +297,13 @@ class ExcelReader(tk.Tk):
             else:
                 end_text = "3.Type sum can ONLY type integer"
             messagebox.showwarning('Warning', end_text)
-        
-
+    def searching_thread(self):
+        if(self.is_searching==False):
+            # Start searching in a separate thread
+            search_thread = threading.Thread(target=self.read_column)
+            search_thread.start()
+        else:
+            messagebox.showwarning('Warning', "Please wait until current process done!")
 if __name__ == '__main__':
     app = ExcelReader()
     app.mainloop()
