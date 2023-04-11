@@ -1,11 +1,11 @@
-#2023/04/04 23:51 v4
-
 import tkinter as tk
 from tkinter import filedialog,messagebox
 from tkinter import ttk
 import pandas as pd
 import numpy as np
+import math
 
+version = 'Excel_Sum_Finder v0.4'
 
 # class ExcelReader(tk.Frame):
 class ExcelReader(tk.Tk):
@@ -17,7 +17,7 @@ class ExcelReader(tk.Tk):
         self.create_widgets()
 
     def initUI(self):
-        self.title('Excel_Sum_Finder v0.3')
+        self.title(version)
         # self.geometry('300x450') 
 
     def erase_error_alert(self):
@@ -29,8 +29,6 @@ class ExcelReader(tk.Tk):
             self.taget_sum_entry.config(bg      = default_color)
         except AttributeError:
             return 1
-
-
     def create_widgets(self):
         self.output_info = tk.Label(self, text="Info: Author: Mark Lin YL - 2023.04.06")
         self.output_info.pack(padx=20, pady=10)
@@ -40,8 +38,7 @@ class ExcelReader(tk.Tk):
 
         self.choose_file_button = tk.Button(self, text="Choose file", command=self.choose_file)
         self.choose_file_button.pack(padx=20, pady=10)
-        self.first_choose = False
-        
+        self.first_choose = False      
     def UI_button(self):
         # Get a list of column names from the DataFrame
         self.column_dropdown_text = tk.Label(self, text="2.choose column below")
@@ -63,9 +60,9 @@ class ExcelReader(tk.Tk):
         # Create a StringVar to hold the selected option
         self.selected_option = tk.StringVar()
         # Set the default option
-        self.selected_option.set("Equal  ")
+        self.selected_option.set("Closest")
         # Create the radio buttons
-        self.radio_button_0 = tk.Radiobutton(self, text="Equal  ", variable=self.selected_option, value="Equal  " )
+        self.radio_button_0 = tk.Radiobutton(self, text="Equal", variable=self.selected_option, value="Equal" )
         self.radio_button_1 = tk.Radiobutton(self, text="Closest", variable=self.selected_option, value="Closest" )
         # Pack the radio buttons
         self.radio_button_0.pack()
@@ -81,6 +78,12 @@ class ExcelReader(tk.Tk):
         #add Processbar
         self.progressbar = ttk.Progressbar(self, orient="horizontal", length=300, mode="determinate")
         self.progressbar.pack(pady=10)
+    #UI complete process
+    def UI_process(self,process,len):
+        self.progressbar['value'] = int(process*100/(len+1))
+        self.update_idletasks()
+        complete = int(process*100/len+1)
+    #button functions
     def choose_file(self):
         try:
             self.erase_error_alert()
@@ -90,9 +93,11 @@ class ExcelReader(tk.Tk):
             if self.first_choose == False:
                 self.UI_button()
             self.file_label.config(text="1.Chosen file: " + self.filename)
-            self.data = pd.read_excel(self.filename)
-            
-                # Update the column menu with the column names from the new file
+            #old one
+            # self.data = pd.read_excel(self.filename)
+            self.data = pd.read_excel(self.filename).replace(np.nan, 0)
+            self.data = self.data.astype('int')
+            # Update the column menu with the column names from the new file
             self.column_var.set("")
             # self.column_menu.destroy()
             self.column_menu['menu'].delete(0, 'end')
@@ -109,10 +114,8 @@ class ExcelReader(tk.Tk):
         for i in range(n+1):
             dp[i][0] = []
         for i in range(1, n+1):
-            self.progressbar['value'] = int(i*100/(n+1))
-            self.update_idletasks()
-            complete = int(i*100/n+1)
-            # print(int(i*100/(n+1)))
+            #UI complete process
+            self.UI_process(i,n)
             for j in range(1, target_sum+1):
                 if arr[i-1] <= j:
                     prev_subset = dp[i-1][j]
@@ -126,29 +129,56 @@ class ExcelReader(tk.Tk):
                 else:
                     dp[i][j] = dp[i-1][j]
         return dp[n][target_sum]
-    #Algorithm2 : find not equal but most close to target sum   
+    #Algorithm2
     def find_closest_sum(self,arr, target_sum):
+        #mark add
         self.closest_equal = False
-        # Sort the array in ascending order
-        arr = np.sort(arr)
-        # Initialize the closest_sum to a large positive number
-        closest_sum = float('inf')
-        # Iterate through all possible subsets of the array
-        for i in range(2**len(arr)):
-            subset = [arr[j] for j in range(len(arr)) if (i & (1 << j))]
-            # Compute the sum of the current subset
-            subset_sum = sum(subset)
-            # If the subset sum is closer to the target sum than the current closest sum, update the closest sum
-            if abs(subset_sum - target_sum) < abs(closest_sum - target_sum):
-                closest_sum = subset_sum
-                self.closest_sum = closest_sum
-                self.closest_subset = subset
-            # If we find a subset that sums up to the target sum, we can stop searching and return that subset
-            if closest_sum == target_sum:
-                self.closest_equal = True
-                return subset
-        # If no subset sums up to the target sum, return the closest sum
-        return closest_sum
+        self.taget_sum = target_sum
+        self.closest_sum = 0
+        self.closest_compose_v =[]
+        self.closest_compose_row =[]
+        
+        n = int(len(arr))
+        dp = [[False for j in range(target_sum + 1)] for i in range(n + 1)]
+        dp[0][0] = True
+        closest_sum = None
+        for i in range(1, n + 1):
+            #UI complete process
+            self.UI_process(i,n)
+            
+            for j in range(target_sum + 1):
+                i = int(i)
+                j = int(j)
+                if arr[i - 1] > j:
+                    dp[i][j] = dp[i - 1][j]
+                else:
+                    dp[i][j] = dp[i - 1][j] or dp[i - 1][ int(j - arr[i - 1]) ]
+                if dp[i][j] and (closest_sum is None or abs(target_sum - j) < abs(target_sum - closest_sum)):
+                    closest_sum = j
+        closest_sum = int(closest_sum)
+        if closest_sum == target_sum:
+            print("The target sum can be obtained exactly.")
+            self.closest_equal = True 
+        else:
+            print(f"The closest sum to the target is {closest_sum}.")
+            self.closest_sum = closest_sum
+        #sum components in array
+        print("The components of the closest sum are:")
+
+        i = n
+        j = closest_sum
+        while i > 0 and j > 0:
+            if dp[i - 1][j]:
+                i -= 1
+            else:
+                # print(int(arr[i - 1]))
+                print(arr[i - 1])
+                # self.closest_compose_v.append(int(arr[i - 1]))
+                self.closest_compose_v.append(arr[i - 1])
+                self.closest_compose_row.append(i + 1)
+                j -= int(arr[i - 1])
+                i -= 1
+    
     #Print out result for Algorithm1
     def show_result_equal(self):
         result_s_title      = "Result_"
@@ -174,34 +204,28 @@ class ExcelReader(tk.Tk):
             messagebox.showinfo(result_s_title, result_s_equal +"\r\n" +end_text)
     #Print out result for Algorithm2
     def show_result_close(self):
-        if self.result is not None:
+        if self.closest_compose_v is not None:
                 result_s_title      = "Result_"
-                result_s_equal      = "Equal = "
+                result_s_equal      = "Equal  = "
                 result_s_target_sum = "Target = " + str(self.taget_sum) 
                 result_s_cloest     = "Cloest = "
                 result_s_compose    = "Values = "
-                if (isinstance(self.result,np.float64)):
-                    #if true mean only one number
-                    result_s_title += "  "
-                    if(self.closest_equal):
-                        result_s_equal += "Yes"
-                    else:
-                        result_s_equal += "No"
-                        result_s_cloest += str(int(self.closest_sum))
-                    result_s_compose += str([int(i) for i in self.closest_subset]) 
-                elif(isinstance(self.result,list)):
-                    #if true mean only one number
-                    result_s_title += "L "
-                    if(self.closest_equal):
-                        result_s_equal += "Yes"
-                    else:
-                        result_s_equal += "No"
-                        result_s_cloest += str(int(self.closest_sum))
-                    result_s_compose += str([int(i) for i in self.result])
+                result_s_compose_row    = "Rows = "
+                
                 if(self.closest_equal):
-                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n"  +result_s_compose+ "\r\n" )      
+                    result_s_equal += "Yes"
                 else:
-                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n" +result_s_cloest+ "\r\n" +result_s_compose+ "\r\n" )      
+                    result_s_equal += "No"
+                    result_s_cloest += str(int(self.closest_sum))
+                print("self.result = " ,  self.closest_compose_v, " type = ", type(self.closest_compose_v))
+                result_s_compose += str(self.closest_compose_v)
+                result_s_compose_row += str(self.closest_compose_row)
+                    
+                    
+                if(self.closest_equal):
+                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n"  +result_s_compose+ "\r\n\r\n" +result_s_compose_row+ "\r\n" )      
+                else:
+                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n" +result_s_cloest+ "\r\n" +result_s_compose+ "\r\n\r\n" +result_s_compose_row+ "\r\n" )      
         else:
             end_text = "Excel NOT found"
             messagebox.showinfo('Result', end_text)
@@ -211,32 +235,22 @@ class ExcelReader(tk.Tk):
             self.selected_option.get()
             self.selected_column = self.column_var.get()
             self.column_data = self.data[self.selected_column]
-            # print("self.column_data=\r\n",self.column_data)
-            # print("type=",type(self.column_data))
+            print("self.column_data = ",self.column_data)
             length = len(self.column_data)
-            # check data if 'nan' replace with 0
-            for i in range(length) :
-                # print("self.column_data[" , i ,"]=",self.column_data[i])
-                if pd.isna(self.column_data[i]):
-                    # np.isnan(self.column_data[i])
-                    print(">>>>self.column_data[i] == nan")
-                    self.column_data[i] = 0
-                    int(self.column_data[i])
-            # print("***\r\nself.column_data=",self.column_data,"\r\n***\r\n")
-            # print("**type=",type(self.column_data))
-
+            #input: target sum
             self.taget_sum = self.taget_sum_entry.get()
             self.taget_sum = int(self.taget_sum)
             print("self.taget_sum=",self.taget_sum)
-            # print("type(self.taget_sum)=",type(self.taget_sum))
-            
-            if(self.selected_option.get() == "Equal  "):
+
+            #from Select Option List, choose different algorithm
+            if(self.selected_option.get() == "Equal"):
                 #find equal to target sum 
                 self.result = self.subset_sum_indices(self.column_data, self.taget_sum)
                 self.show_result_equal()
             elif(self.selected_option.get() == "Closest"):
-                #find not equal but most close to target sum   
+                #find not equal but most close to target sum 
                 self.result = self.find_closest_sum(self.column_data, self.taget_sum)
+                # self.result = self.find_closest_sum(self.column_data, self.taget_sum)
                 self.show_result_close()
 
         except FileNotFoundError:
