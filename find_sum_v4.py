@@ -4,6 +4,7 @@ from tkinter import ttk
 import pandas as pd
 import numpy as np
 import math
+import time
 
 version = 'Excel_Sum_Finder v0.4'
 
@@ -19,7 +20,6 @@ class ExcelReader(tk.Tk):
     def initUI(self):
         self.title(version)
         # self.geometry('300x450') 
-
     def erase_error_alert(self):
         default_color = 'SystemButtonFace'
         try:
@@ -78,35 +78,18 @@ class ExcelReader(tk.Tk):
         #add Processbar
         self.progressbar = ttk.Progressbar(self, orient="horizontal", length=300, mode="determinate")
         self.progressbar.pack(pady=10)
+        
     #UI complete process
     def UI_process(self,process,len):
         self.progressbar['value'] = int(process*100/(len+1))
         self.update_idletasks()
         complete = int(process*100/len+1)
-    #button functions
-    def choose_file(self):
-        try:
-            self.erase_error_alert()
-            self.filename = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
-            if self.filename == "":
-                return 1
-            if self.first_choose == False:
-                self.UI_button()
-            self.file_label.config(text="1.Chosen file: " + self.filename)
-            #old one
-            # self.data = pd.read_excel(self.filename)
-            self.data = pd.read_excel(self.filename).replace(np.nan, 0)
-            self.data = self.data.astype('int')
-            # Update the column menu with the column names from the new file
-            self.column_var.set("")
-            # self.column_menu.destroy()
-            self.column_menu['menu'].delete(0, 'end')
-            for column_name in self.data.columns:
-                self.column_menu['menu'].add_command(label=column_name, command=tk._setit(self.column_var, column_name))
-        except FileNotFoundError:
-            #Alert user to choose File first
-            print("FileNotFoundError: no file been choose")
-            
+    def timercount_start(self):
+        self.start_time = time.time()
+    def timercount_stop(self):
+        self.end_time = time.time()
+        elapsed_time = round(self.end_time - self.start_time, 3)
+        return elapsed_time
     #Algorithm1 : find equal to target sum 
     def subset_sum_indices(self,arr, target_sum):
         n = len(arr)
@@ -177,8 +160,7 @@ class ExcelReader(tk.Tk):
                 self.closest_compose_v.append(arr[i - 1])
                 self.closest_compose_row.append(i + 1)
                 j -= int(arr[i - 1])
-                i -= 1
-    
+                i -= 1  
     #Print out result for Algorithm1
     def show_result_equal(self):
         result_s_title      = "Result_"
@@ -220,18 +202,44 @@ class ExcelReader(tk.Tk):
                 print("self.result = " ,  self.closest_compose_v, " type = ", type(self.closest_compose_v))
                 result_s_compose += str(self.closest_compose_v)
                 result_s_compose_row += str(self.closest_compose_row)
-                    
-                    
+                
+                time_spent = self.timercount_stop()
                 if(self.closest_equal):
-                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n"  +result_s_compose+ "\r\n\r\n" +result_s_compose_row+ "\r\n" )      
+                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n"  +result_s_compose+ "\r\n\r\n" +result_s_compose_row+ "\r\n"+ str(self.timediff) + " seconds" )      
                 else:
-                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n" +result_s_cloest+ "\r\n" +result_s_compose+ "\r\n\r\n" +result_s_compose_row+ "\r\n" )      
+                    messagebox.showinfo( result_s_title , result_s_equal+ "\r\n" +result_s_target_sum+ "\r\n" +result_s_cloest+ "\r\n" +result_s_compose+ "\r\n\r\n" +result_s_compose_row+ "\r\n"+ str(self.timediff) + " seconds" )      
         else:
             end_text = "Excel NOT found"
             messagebox.showinfo('Result', end_text)
-    def read_column(self):
+    #button functions
+    def choose_file(self):
         try:
             self.erase_error_alert()
+            self.filename = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
+            if self.filename == "":
+                return 1
+            if self.first_choose == False:
+                self.UI_button()
+            self.file_label.config(text="1.Chosen file: " + self.filename)
+            #old one
+            # self.data = pd.read_excel(self.filename)
+            self.data = pd.read_excel(self.filename).replace(np.nan, 0)
+            self.data = self.data.astype('int')
+            # Update the column menu with the column names from the new file
+            self.column_var.set("")
+            # self.column_menu.destroy()
+            self.column_menu['menu'].delete(0, 'end')
+            for column_name in self.data.columns:
+                self.column_menu['menu'].add_command(label=column_name, command=tk._setit(self.column_var, column_name))
+        except FileNotFoundError:
+            #Alert user to choose File first
+            print("FileNotFoundError: no file been choose")
+    def read_column(self):
+        try:
+            #start time count
+            self.timercount_start()
+            self.erase_error_alert()
+            #renew excel column selected name
             self.selected_option.get()
             self.selected_column = self.column_var.get()
             self.column_data = self.data[self.selected_column]
@@ -241,16 +249,17 @@ class ExcelReader(tk.Tk):
             self.taget_sum = self.taget_sum_entry.get()
             self.taget_sum = int(self.taget_sum)
             print("self.taget_sum=",self.taget_sum)
-
+            
             #from Select Option List, choose different algorithm
             if(self.selected_option.get() == "Equal"):
                 #find equal to target sum 
                 self.result = self.subset_sum_indices(self.column_data, self.taget_sum)
+                self.timediff = self.timercount_stop()
                 self.show_result_equal()
             elif(self.selected_option.get() == "Closest"):
                 #find not equal but most close to target sum 
                 self.result = self.find_closest_sum(self.column_data, self.taget_sum)
-                # self.result = self.find_closest_sum(self.column_data, self.taget_sum)
+                self.timediff = self.timercount_stop()
                 self.show_result_close()
 
         except FileNotFoundError:
