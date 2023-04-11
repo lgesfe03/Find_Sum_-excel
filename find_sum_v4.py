@@ -7,6 +7,7 @@ import math
 import time
 
 version = 'Excel_Sum_Finder v0.4'
+pub_date = '2023/04/11'
 
 # class ExcelReader(tk.Frame):
 class ExcelReader(tk.Tk):
@@ -30,7 +31,7 @@ class ExcelReader(tk.Tk):
         except AttributeError:
             return 1
     def create_widgets(self):
-        self.output_info = tk.Label(self, text="Info: Author: Mark Lin YL - 2023.04.06")
+        self.output_info = tk.Label(self, text=("Info: Author: Mark Lin YL - " + pub_date))
         self.output_info.pack(padx=20, pady=10)
         
         self.file_label = tk.Message(self, text="1.Choose an Excel file:",aspect=400)
@@ -39,6 +40,20 @@ class ExcelReader(tk.Tk):
         self.choose_file_button = tk.Button(self, text="Choose file", command=self.choose_file)
         self.choose_file_button.pack(padx=20, pady=10)
         self.first_choose = False      
+    #UI complete process-2**************
+    def UI_process2(self,process,len):
+        self.progressbar['value'] = int(process*100/(len+1))
+        self.update_idletasks()
+        complete = int(process*100/len+1)
+    #UI complete process-1**************
+    def update_progress_label(self):
+        return f"Current Progress: {self.progressbar['value']}%"
+    def UI_process(self, process,len):
+        if self.progressbar['value'] <= 100:
+            self.progressbar['value'] = int(process*100/(len+1))+1
+            self.value_label['text'] = self.update_progress_label()
+            self.update_idletasks()
+            complete = int(process*100/len+1)
     def UI_button(self):
         # Get a list of column names from the DataFrame
         self.column_dropdown_text = tk.Label(self, text="2.choose column below")
@@ -77,13 +92,11 @@ class ExcelReader(tk.Tk):
         self.first_choose = True
         #add Processbar
         self.progressbar = ttk.Progressbar(self, orient="horizontal", length=300, mode="determinate")
+            # label
+        self.value_label = ttk.Label(self, text=self.update_progress_label())        
         self.progressbar.pack(pady=10)
-        
-    #UI complete process
-    def UI_process(self,process,len):
-        self.progressbar['value'] = int(process*100/(len+1))
-        self.update_idletasks()
-        complete = int(process*100/len+1)
+        self.value_label.pack(pady=10)
+    
     def timercount_start(self):
         self.start_time = time.time()
     def timercount_stop(self):
